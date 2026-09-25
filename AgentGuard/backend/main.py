@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from datetime import datetime
 import uuid
 
-from backend.policy_engine import evaluate_policy  # Ensure policy_engine has evaluate_policy()
+from backend.guard import inspect_tool_call
+from backend.models import ToolCall  # Ensure policy_engine has evaluate_policy()
 
 app = FastAPI(title="AgentGuard Security Gateway")
 
@@ -40,24 +41,31 @@ def get_events():
 
 @app.post("/evaluate")
 def evaluate_event(request: EvaluationRequest):
-    """Intercepts tool payloads, runs policy evaluation, and logs events."""
-    # Run through policy engine heuristics
-    evaluation = evaluate_policy(request.tool, request.prompt)
-    
+    tool_call = ToolCall(
+        agent_id=request.agent_id,
+        tool=request.tool,
+        arguments={
+            "prompt": request.prompt
+        }
+    )
+
+    inspection_result = inspect_tool_call(tool_call)
+
     event_id = str(uuid.uuid4())[:8]
+
     event = {
         "id": event_id,
         "timestamp": datetime.now().isoformat(),
-        "agent_id": request.agent_id,
-        "tool": request.tool,
+        "agent_id": inspection_result["agent_id"],
+        "tool": inspection_result["tool"],
         "prompt": request.prompt,
-        "risk": evaluation.get("risk", "UNKNOWN"),
-        "decision": evaluation.get("decision", "UNKNOWN"),
-        "reason": evaluation.get("reason", "Policy rule applied.")
+        "risk": inspection_result["risk"],
+        "decision": inspection_result["decision"],
+        "reason": inspection_result["reason"],
     }
-    
-    # Store event at top of audit list
+
     security_events.insert(0, event)
+
     return event
 
 @app.post("/action")

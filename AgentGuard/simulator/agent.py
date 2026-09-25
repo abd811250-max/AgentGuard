@@ -2,22 +2,28 @@ import requests
 import json
 
 
-AGENTGUARD_URL = "http://127.0.0.1:8000/guard"
+AGENTGUARD_URL = "http://127.0.0.1:8000/evaluate"
 
 
-def call_agentguard(tool, arguments=None):
+def call_agentguard(
+    tool,
+    arguments=None,
+    agent_id="simulator-agent"
+):
     """
     Send a simulated AI agent tool call to AgentGuard.
     """
 
+    if arguments is None:
+        arguments = {}
+
     payload = {
-        "agent_id": "demo-agent",
+        "agent_id": agent_id,
         "tool": tool,
-        "arguments": arguments or {}
+        "prompt": json.dumps(arguments)
     }
 
     print("\n" + "=" * 60)
-
     print("AI AGENT REQUEST")
     print("=" * 60)
 

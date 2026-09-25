@@ -1,17 +1,20 @@
 from .models import ToolCall
-from .policy_engine import evaluate_tool
+from .policy_engine import evaluate_policy
 from .logger import log_event
 
 
 def inspect_tool_call(tool_call: ToolCall):
     """
-    Main AgentGuard inspection pipeline.
+    Central AgentGuard inspection pipeline.
 
-    Every agent tool request passes through this function
-    before the actual tool is executed.
+    Every agent tool request should pass through this function
+    before any tool is executed.
     """
 
-    policy_result = evaluate_tool(tool_call.tool)
+    policy_result = evaluate_policy(
+        tool=tool_call.tool,
+        prompt=""
+    )
 
     result = {
         "agent_id": tool_call.agent_id,
